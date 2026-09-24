@@ -5,7 +5,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Crear iconos validos
+      - name: Crear iconos
         shell: powershell
         run: |
           mkdir src-tauri/icons -Force
@@ -15,22 +15,29 @@ jobs:
           $g.Clear([System.Drawing.Color]::Black)
           $g.FillRectangle([System.Drawing.Brushes]::Orange, 50,50,156,156)
           $bmp.Save("src-tauri/icons/icon.png", [System.Drawing.Imaging.ImageFormat]::Png)
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/32x32.png" -Force
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128.png" -Force
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128@2x.png" -Force
+          $bmp.Save("src-tauri/icons/32x32.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          $bmp.Save("src-tauri/icons/128x128.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          $bmp.Save("src-tauri/icons/128x128@2x.png", [System.Drawing.Imaging.ImageFormat]::Png)
           $icon = [System.Drawing.Icon]::FromHandle($bmp.GetHicon())
-          $stream = [System.IO.File]::Create("src-tauri/icons/icon.ico")
-          $icon.Save($stream)
-          $stream.Close()
+          $s = [System.IO.File]::Create("src-tauri/icons/icon.ico"); $icon.Save($s); $s.Close()
       - uses: actions/setup-node@v4
         with: { node-version: 18 }
       - uses: dtolnay/rust-toolchain@stable
       - run: npm install
       - run: npm run tauri build
-      - name: Listar bundle
+      - name: Ver que se creo
         shell: powershell
-        run: Get-ChildItem -Recurse src-tauri/target/release/bundle | Format-List
-      - uses: actions/upload-artifact@v4
+        run: |
+          Write-Host "=== BUNDLE ==="
+          dir src-tauri/target/release/bundle -Recurse -Force
+          Write-Host "=== EXE ==="
+          dir src-tauri/target/release/*.exe
+      - name: Subir EXE
+        uses: actions/upload-artifact@v4
         with:
           name: IA-Sentinel-EXE
-          path: src-tauri/target/release/bundle/
+          path: |
+            src-tauri/target/release/*.exe
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+          if-no-files-found: warn
