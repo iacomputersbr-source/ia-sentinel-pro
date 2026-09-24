@@ -55,4 +55,4 @@ fn main() {
        .invoke_handler(tauri::generate_handler![get_hwid, validate_license_25, activate_product, scan_hardware])
        .run(tauri::generate_context!())
        .expect("error while running tauri application");
-    }
+        }
