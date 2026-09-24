@@ -10,21 +10,16 @@ type HmacSha256 = Hmac<Sha256>;
 
 #[command]
 fn get_hwid() -> String {
-    let output = Command::new("powershell.exe")
-        .args(&["-Command", "(Get-WmiObject Win32_ComputerSystemProduct).UUID"])
-        .output();
-    match output {
-        Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(),
-        Err(_) => "UNKNOWN-HWID".to_string()
-    }
+    let output = Command::new("powershell.exe").args(&["-Command", "(Get-WmiObject Win32_ComputerSystemProduct).UUID"]).output();
+    match output { Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(), Err(_) => "UNKNOWN-HWID".to_string() }
 }
 
 #[command]
 fn validate_license_25(key: String) -> bool {
     let cleaned = key.replace("-", "").to_uppercase();
-    if cleaned.len() != 25 { return false; }
+    if cleaned.len()!= 25 { return false; }
     let allowed = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    if !cleaned.chars().all(|c| allowed.contains(c)) { return false; }
+    if!cleaned.chars().all(|c| allowed.contains(c)) { return false; }
     let unique: HashSet<char> = cleaned.chars().collect();
     if unique.len() < 8 { return false; }
     let payload = &cleaned[0..20];
@@ -44,9 +39,7 @@ fn validate_license_25(key: String) -> bool {
 
 #[command]
 fn activate_product(key: String, hwid: String) -> String {
-    if !validate_license_25(key.clone()) {
-        return r#"{"valid": false, "reason": "Chave invalida - checksum HMAC falhou"}"#.to_string();
-    }
+    if!validate_license_25(key.clone()) { return r#"{"valid": false, "reason": "Chave invalida - checksum HMAC falhou"}"#.to_string(); }
     format!(r#"{{"valid": true, "key": "{}", "hwid": "{}", "expires": "2027-12-31", "max_pcs": 10, "client": "Licenciado IA Computers"}}"#, key, hwid)
 }
 
@@ -54,8 +47,7 @@ fn activate_product(key: String, hwid: String) -> String {
 fn scan_hardware(lang: String) -> String {
     let ps_script = format!(r#"
         $lang = '{}';
-        $hw = @{{}};
-        $hw.hostname = $env:COMPUTERNAME;
+        $hw = @{{}}; $hw.hostname = $env:COMPUTERNAME;
         try {{ $cs = Get-WmiObject Win32_ComputerSystem; $hw.motherboard = $cs.Model; $hw.manufacturer = $cs.Manufacturer; $hw.ram_gb = [math]::Round($cs.TotalPhysicalMemory/1GB,2) }} catch {{ $hw.motherboard = 'VERIFICACAO MANUAL OBRIGATORIA' }}
         try {{ $cpu = Get-WmiObject Win32_Processor; $hw.cpu = $cpu.Name }} catch {{}}
         $disks = @(); Get-WmiObject Win32_LogicalDisk | ForEach-Object {{ $disks += @{{ device=$_.DeviceID; free_gb=[math]::Round($_.FreeSpace/1GB,2); total_gb=[math]::Round($_.Size/1GB,2) }} }}
@@ -68,15 +60,12 @@ fn scan_hardware(lang: String) -> String {
         $report | ConvertTo-Json -Depth 5
     "#, lang);
     let output = Command::new("powershell.exe").args(&["-NoProfile","-Command",&ps_script]).output();
-    match output {
-        Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
-        Err(e) => format!(r#"{{"error":"{}"}}"#, e)
-    }
+    match output { Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(), Err(e) => format!(r#"{{"error":"{}"}}"#, e) }
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_hwid, validate_license_25, activate_product, scan_hardware])
-        .run(tauri::generate_context!())
-        .expect("error");
+       .invoke_handler(tauri::generate_handler![get_hwid, validate_license_25, activate_product, scan_hardware])
+       .run(tauri::generate_context!())
+       .expect("error");
 }
