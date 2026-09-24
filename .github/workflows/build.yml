@@ -1,62 +1,38 @@
-name: Build IA Sentinel Desktop EXE - Licencia 25 chars
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
+name: Build EXE
+on: [push, workflow_dispatch]
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Crear iconos automaticamente
+      - name: Debug estructura
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path src-tauri/icons | Out-Null
+          Write-Host "=== RAIZ ==="
+          dir
+          Write-Host "=== BUSCANDO package.json ==="
+          Get-ChildItem -Recurse -Filter package.json | Select-Object FullName
+      - name: Crear iconos
+        shell: powershell
+        run: |
+          mkdir src-tauri/icons -Force
+          if (Test-Path "FINAL_GITHUB_UPLOAD/package.json") { Copy-Item FINAL_GITHUB_UPLOAD/* -Destination . -Recurse -Force }
+          if (Test-Path "ia-sentinel-pro/package.json") { Copy-Item ia-sentinel-pro/* -Destination . -Recurse -Force }
           Add-Type -AssemblyName System.Drawing
-          function New-Icon($size,$path){
-            $bmp = New-Object System.Drawing.Bitmap $size,$size
-            $g = [System.Drawing.Graphics]::FromImage($bmp)
-            $g.Clear([System.Drawing.Color]::FromArgb(7,10,18))
-            $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(0,245,255),2)
-            $g.DrawRectangle($pen,0,0,$($size-1),$($size-1))
-            $bmp.Save($path)
-            $g.Dispose(); $bmp.Dispose()
-          }
-          New-Icon 32 src-tauri/icons/32x32.png
-          New-Icon 128 src-tauri/icons/128x128.png
-          New-Icon 512 src-tauri/icons/icon.png
-          Copy-Item src-tauri/icons/icon.png src-tauri/icons/128x128@2x.png
-          Copy-Item src-tauri/icons/icon.png src-tauri/icons/icon.ico
-          dir src-tauri/icons
-
-      - name: Setup Node 18
-        uses: actions/setup-node@v4
+          $b=New-Object System.Drawing.Bitmap 512,512
+          $g=[System.Drawing.Graphics]::FromImage($b)
+          $g.Clear([System.Drawing.Color]::Black)
+          $b.Save("src-tauri/icons/icon.png")
+          $b.Save("src-tauri/icons/32x32.png")
+          $b.Save("src-tauri/icons/128x128.png")
+          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128@2x.png"
+          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/icon.ico"
+      - uses: actions/setup-node@v4
+        with: { node-version: 18 }
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm install
+      - run: npm run tauri build
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: 18
-
-      - name: Setup Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build EXE with Tauri
-        run: npm run tauri build
-
-      - name: List output
-        run: ls src-tauri/target/release/bundle/ -R
-
-      - name: Upload MSI installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: IA-Sentinel-Installer-MSI
-          path: src-tauri/target/release/bundle/msi/*.msi
-
-      - name: Upload Portable EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: IA-Sentinel-Portable-EXE
+          name: IA-Sentinel-EXE
           path: src-tauri/target/release/*.exe
