@@ -11,24 +11,14 @@
   },
   "tauri": {
     "allowlist": {
+      "all": false,
       "shell": {
-        "open": true,
-        "scope": [
-          {
-            "name": "powershell",
-            "path": "powershell.exe",
-            "args": true
-          }
-        ]
+        "all": false,
+        "open": true
       },
       "fs": {
-        "scope": [
-          "$RESOURCE/*",
-          "$APPDATA/*",
-          "$DESKTOP/*"
-        ],
-        "writeFile": true,
-        "readFile": true
+        "all": true,
+        "scope": ["$APPDATA/**", "$APP/**", "$RESOURCE/**"]
       },
       "os": {
         "all": true
@@ -39,14 +29,21 @@
     },
     "bundle": {
       "active": true,
+      "category": "DeveloperTool",
       "identifier": "com.iacomputers.sentinel",
-      "icon": [
-        "icons/icon.png"
-      ],
-      "resources": []
+      "icon": ["icons/icon.png"],
+      "targets": ["msi"]
     },
     "security": {
       "csp": null
-    }
+    },
+    "windows": [
+      {
+        "title": "IA Sentinel Pro 2.0",
+        "width": 1000,
+        "height": 700,
+        "resizable": true
+      }
+    ]
   }
 }
