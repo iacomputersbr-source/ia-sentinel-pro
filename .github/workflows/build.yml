@@ -5,22 +5,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Arreglar carpeta triple anidada
-        shell: powershell
-        run: |
-          Write-Host "Buscando package.json..."
-          Get-ChildItem -Recurse -Filter package.json | Select-Object FullName
-          $pkg = Get-ChildItem -Recurse -Filter package.json -File | Where-Object { $_.FullName -notlike "*node_modules*" } | Select-Object -First 1
-          if (-not $pkg) { Write-Host "NO SE ENCONTRO package.json"; exit 1 }
-          Write-Host "ENCONTRADO EN: $($pkg.FullName)"
-          Write-Host "Copiando de $($pkg.DirectoryName) a $env:GITHUB_WORKSPACE"
-          Copy-Item "$($pkg.DirectoryName)/*" -Destination $env:GITHUB_WORKSPACE -Recurse -Force
-          Write-Host "Ahora en raiz:"
-          dir
       - name: Crear iconos
         shell: powershell
         run: |
-          mkdir src-tauri/icons -Force -ErrorAction SilentlyContinue
+          mkdir src-tauri/icons -Force
           Add-Type -AssemblyName System.Drawing
           $b=New-Object System.Drawing.Bitmap 512,512
           $g=[System.Drawing.Graphics]::FromImage($b)
