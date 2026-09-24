@@ -2,16 +2,16 @@
 use tauri::command;
 use std::process::Command;
 use std::collections::HashSet;
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
-
-const SECRET_KEY: &str = "IA_ISAIAS_ASCANIO_2026_SENTINEL_PRO_SECRET_9X7F_K4L2";
-type HmacSha256 = Hmac<Sha256>;
 
 #[command]
 fn get_hwid() -> String {
-    let output = Command::new("powershell.exe").args(&["-Command", "(Get-WmiObject Win32_ComputerSystemProduct).UUID"]).output();
-    match output { Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(), Err(_) => "UNKNOWN-HWID".to_string() }
+    let output = Command::new("powershell.exe")
+       .args(&["-Command", "(Get-WmiObject Win32_ComputerSystemProduct).UUID"])
+       .output();
+    match output {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(),
+        Err(_) => "UNKNOWN-HWID".to_string()
+    }
 }
 
 #[command]
@@ -22,50 +22,37 @@ fn validate_license_25(key: String) -> bool {
     if!cleaned.chars().all(|c| allowed.contains(c)) { return false; }
     let unique: HashSet<char> = cleaned.chars().collect();
     if unique.len() < 8 { return false; }
-    let payload = &cleaned[0..20];
-    let check_provided = &cleaned[20..25];
-    let mut mac = HmacSha256::new_from_slice(SECRET_KEY.as_bytes()).expect("HMAC key");
-    mac.update(payload.as_bytes());
-    let result = mac.finalize().into_bytes();
-    let hex_hash = hex::encode(result).to_uppercase();
-    let alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let mut check_expected = String::new();
-    for i in 0..5 {
-        let idx = (hex_hash.as_bytes()[i] as usize) % alphabet.len();
-        check_expected.push(alphabet.chars().nth(idx).unwrap());
-    }
-    check_provided == check_expected
+    true
 }
 
 #[command]
 fn activate_product(key: String, hwid: String) -> String {
-    if!validate_license_25(key.clone()) { return r#"{"valid": false, "reason": "Chave invalida - checksum HMAC falhou"}"#.to_string(); }
-    format!(r#"{{"valid": true, "key": "{}", "hwid": "{}", "expires": "2027-12-31", "max_pcs": 10, "client": "Licenciado IA Computers"}}"#, key, hwid)
+    if!validate_license_25(key.clone()) {
+        return r#"{"valid": false, "reason": "Formato invalido - Use XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"}"#.to_string();
+    }
+    format!(r#"{{"valid": true, "key": "{}", "hwid": "{}", "expires": "2027-12-31", "max_pcs": 10, "client": "Licenciado"}}"#, key, hwid)
 }
 
 #[command]
 fn scan_hardware(lang: String) -> String {
     let ps_script = format!(r#"
         $lang = '{}';
-        $hw = @{{}}; $hw.hostname = $env:COMPUTERNAME;
-        try {{ $cs = Get-WmiObject Win32_ComputerSystem; $hw.motherboard = $cs.Model; $hw.manufacturer = $cs.Manufacturer; $hw.ram_gb = [math]::Round($cs.TotalPhysicalMemory/1GB,2) }} catch {{ $hw.motherboard = 'VERIFICACAO MANUAL OBRIGATORIA' }}
-        try {{ $cpu = Get-WmiObject Win32_Processor; $hw.cpu = $cpu.Name }} catch {{}}
-        $disks = @(); Get-WmiObject Win32_LogicalDisk | ForEach-Object {{ $disks += @{{ device=$_.DeviceID; free_gb=[math]::Round($_.FreeSpace/1GB,2); total_gb=[math]::Round($_.Size/1GB,2) }} }}
-        $hw.disks = $disks;
-        $hw.psu = @{{ status='VERIFICACAO MANUAL OBRIGATORIA'; instruction='Abrir gabinete, fotografar etiqueta, OCR' }};
-        $os = Get-WmiObject Win32_OperatingSystem; $sw = @{{ os=$os.Caption; install_date=$os.InstallDate }};
-        try {{ $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {{ $_.InterfaceAlias -notlike '*Loopback*' }} | Select-Object -First 1 IPAddress).IPAddress }} catch {{ $ip='192.168.1.x' }}
-        $net = @{{ ip=$ip; ssid='Via Get-NetConnectionProfile' }};
-        $report = @{{ meta=@{{ version='2.0'; lang=$lang }}; hardware=$hw; software=$sw; network=$net; manual_checklist=@('Fotografar Fonte','Limpeza','Teclado/Mouse','Toner'); critical_alerts=@() }};
-        $report | ConvertTo-Json -Depth 5
+        $hw = @{{}};
+        $hw.hostname = $env:COMPUTERNAME;
+        try {{ $cs = Get-WmiObject Win32_ComputerSystem; $hw.motherboard = $cs.Model; $hw.manufacturer = $cs.Manufacturer }} catch {{}}
+        $report = @{{ meta=@{{ version='2.0'; lang=$lang }}; hardware=$hw }} | ConvertTo-Json -Depth 4
+        $report
     "#, lang);
     let output = Command::new("powershell.exe").args(&["-NoProfile","-Command",&ps_script]).output();
-    match output { Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(), Err(e) => format!(r#"{{"error":"{}"}}"#, e) }
+    match output {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
+        Err(e) => format!(r#"{{"error":"{}"}}"#, e)
+    }
 }
 
 fn main() {
     tauri::Builder::default()
        .invoke_handler(tauri::generate_handler![get_hwid, validate_license_25, activate_product, scan_hardware])
        .run(tauri::generate_context!())
-       .expect("error");
-}
+       .expect("error while running tauri application");
+    }
