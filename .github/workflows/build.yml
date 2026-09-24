@@ -1,30 +1,27 @@
 name: Build EXE
 on: [push, workflow_dispatch]
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Debug estructura
+      - name: Fix nested folder
         shell: powershell
         run: |
-          Write-Host "=== RAIZ ==="
-          dir
-          Write-Host "=== BUSCANDO package.json ==="
-          Get-ChildItem -Recurse -Filter package.json | Select-Object FullName
+          $found = Get-ChildItem -Recurse -Filter package.json | Select-Object -First 1
+          $srcDir = $found.Directory.FullName
+          if ($srcDir -ne (Get-Location).Path) { Copy-Item "$srcDir/*" -Destination. -Recurse -Force }
       - name: Crear iconos
         shell: powershell
         run: |
           mkdir src-tauri/icons -Force
-          if (Test-Path "FINAL_GITHUB_UPLOAD/package.json") { Copy-Item FINAL_GITHUB_UPLOAD/* -Destination . -Recurse -Force }
-          if (Test-Path "ia-sentinel-pro/package.json") { Copy-Item ia-sentinel-pro/* -Destination . -Recurse -Force }
           Add-Type -AssemblyName System.Drawing
           $b=New-Object System.Drawing.Bitmap 512,512
           $g=[System.Drawing.Graphics]::FromImage($b)
           $g.Clear([System.Drawing.Color]::Black)
           $b.Save("src-tauri/icons/icon.png")
-          $b.Save("src-tauri/icons/32x32.png")
-          $b.Save("src-tauri/icons/128x128.png")
+          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/32x32.png"
+          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128.png"
           Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128@2x.png"
           Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/icon.ico"
       - uses: actions/setup-node@v4
@@ -35,4 +32,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: IA-Sentinel-EXE
-          path: src-tauri/target/release/*.exe
+          path: src-tauri/target/release/bundle/mSi/*.msi
