@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GERADOR LISTO</title>
 <style>*{box-sizing:border-box;font-family:system-ui}body{background:#070a12;color:#fff;padding:16px}.card{background:#111827;border:1px solid #1f2937;border-radius:16px;padding:20px;margin:16px 0}input{width:100%;padding:12px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:#fff;margin-top:8px}button{width:100%;padding:14px;border-radius:12px;border:none;font-weight:800;cursor:pointer;margin-top:12px}.btn{background:linear-gradient(90deg,#00f5ff,#7c3aed);color:#000}.keybox{background:#000;border:1px dashed #00f5ff;padding:16px;border-radius:12px;margin-top:12px;text-align:center}.key{font-size:22px;letter-spacing:2px;color:#00f5ff;font-weight:900}</style>
 </head><body>
@@ -15,20 +14,20 @@
 <script>
 const SECRET="IA_ISAIAS_ASCANIO_2026_SENTINEL_PRO_SECRET_9X7F_K4L2";
 const ALPH="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-async function hmacSha256(key, message){
-  const enc=new TextEncoder();
-  const cryptoKey=await crypto.subtle.importKey("raw", enc.encode(key), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
-  const sig=await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message));
-  return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+async function hmacSha256(key,message){
+ const enc=new TextEncoder();
+ const cryptoKey=await crypto.subtle.importKey("raw",enc.encode(key),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const sig=await crypto.subtle.sign("HMAC",cryptoKey,enc.encode(message));
+ return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
 }
 async function gen(){
-  const cli=document.getElementById('cli').value||'Cliente';
-  let rand=''; for(let i=0;i<20;i++) rand+=ALPH[Math.floor(Math.random()*ALPH.length)];
-  const sig=await hmacSha256(SECRET, rand);
-  let check=''; for(let i=0;i<5;i++) check+=ALPH[sig.charCodeAt(i)%ALPH.length];
-  const full=rand+check;
-  const key=full.match(/.{1,5}/g).join('-');
-  document.getElementById('out').innerHTML='<div class="keybox"><div class="key">'+key+'</div><div style="margin-top:8px;font-size:12px">Para '+cli+'</div><button onclick="navigator.clipboard.writeText(''+key+'')" style="background:#1f2937;color:#fff;margin-top:10px;padding:10px;border-radius:8px">Copiar</button></div>';
+ const cli=document.getElementById('cli').value||'Cliente';
+ let rand='';for(let i=0;i<20;i++)rand+=ALPH[Math.floor(Math.random()*ALPH.length)];
+ const sig=await hmacSha256(SECRET,rand);
+ let check='';for(let i=0;i<5;i++)check+=ALPH[sig.charCodeAt(i)%ALPH.length];
+ const full=rand+check;
+ const key=full.match(/.{1,5}/g).join('-');
+ document.getElementById('out').innerHTML='<div class="keybox"><div class="key">'+key+'</div><div style="margin-top:8px;font-size:12px">Para '+cli+'</div><button onclick="navigator.clipboard.writeText(\''+key+'\')" style="background:#1f2937;color:#fff;margin-top:10px;padding:10px;border-radius:8px">Copiar</button></div>';
 }
 </script>
 </body></html>
