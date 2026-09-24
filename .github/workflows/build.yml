@@ -5,26 +5,46 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Ver estructura
+        shell: powershell
+        run: |
+          dir
+          Write-Host "=== dentro de ia-sentinel-pro ==="
+          dir ia-sentinel-pro -ErrorAction SilentlyContinue
       - name: Crear iconos
         shell: powershell
         run: |
-          mkdir src-tauri/icons -Force
+          $root = if (Test-Path "ia-sentinel-pro/package.json") { "ia-sentinel-pro" } else { "." }
+          mkdir "$root/src-tauri/icons" -Force
           Add-Type -AssemblyName System.Drawing
           $b=New-Object System.Drawing.Bitmap 512,512
           $g=[System.Drawing.Graphics]::FromImage($b)
           $g.Clear([System.Drawing.Color]::Black)
-          $b.Save("src-tauri/icons/icon.png")
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/32x32.png"
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128.png"
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/128x128@2x.png"
-          Copy-Item "src-tauri/icons/icon.png" "src-tauri/icons/icon.ico"
+          $b.Save("$root/src-tauri/icons/icon.png")
+          Copy-Item "$root/src-tauri/icons/icon.png" "$root/src-tauri/icons/32x32.png"
+          Copy-Item "$root/src-tauri/icons/icon.png" "$root/src-tauri/icons/128x128.png"
+          Copy-Item "$root/src-tauri/icons/icon.png" "$root/src-tauri/icons/128x128@2x.png"
+          Copy-Item "$root/src-tauri/icons/icon.png" "$root/src-tauri/icons/icon.ico"
       - uses: actions/setup-node@v4
-        with:
-          node-version: 18
+        with: { node-version: 18 }
       - uses: dtolnay/rust-toolchain@stable
-      - run: npm install
-      - run: npm run tauri build
+      - name: npm install
+        shell: powershell
+        run: |
+          $root = if (Test-Path "ia-sentinel-pro/package.json") { "ia-sentinel-pro" } else { "." }
+          cd $root
+          npm install
+      - name: Build Tauri
+        shell: powershell
+        run: |
+          $root = if (Test-Path "ia-sentinel-pro/package.json") { "ia-sentinel-pro" } else { "." }
+          cd $root
+          npm run tauri build
       - uses: actions/upload-artifact@v4
         with:
           name: IA-Sentinel-EXE
-          path: src-tauri/target/release/bundle/msi/*.msi
+          path: |
+            ia-sentinel-pro/src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/msi/*.msi
+            ia-sentinel-pro/src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.exe
