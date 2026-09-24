@@ -26,3 +26,4 @@ SISTEMA DE LICENCAS:
 - Checksum: ultimos 5 chars sao derivados de HMAC secreto
 
 SEGREDO: Troque SECRET em main.rs antes de vender: IA_COMPUTERS_2026_SECRET_KEY_CHANGE_THIS_BEFORE_SELLING
+fix build 1 >
