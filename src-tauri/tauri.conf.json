@@ -1,0 +1,52 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "IA Sentinel Pro",
+    "version": "2.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "shell": {
+        "open": true,
+        "scope": [
+          {
+            "name": "powershell",
+            "path": "powershell.exe",
+            "args": true
+          }
+        ]
+      },
+      "fs": {
+        "scope": [
+          "$RESOURCE/*",
+          "$APPDATA/*",
+          "$DESKTOP/*"
+        ],
+        "writeFile": true,
+        "readFile": true
+      },
+      "os": {
+        "all": true
+      },
+      "dialog": {
+        "all": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "identifier": "com.iacomputers.sentinel",
+      "icon": [
+        "icons/icon.png"
+      ],
+      "resources": []
+    },
+    "security": {
+      "csp": null
+    }
+  }
+}
